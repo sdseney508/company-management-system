@@ -15,51 +15,14 @@ const db = mysql.createConnection(
     },
     console.log(`Connected to the comp_management_sys_db database.`)
 );
-// ## Acceptance Criteria
-
-// GIVEN a command-line application that accepts user input
-// WHEN I start the application
-// DONE - THEN I am presented with the following options: view all departments, view all roles, view all employees, add a department, add a role, add an employee, and update an employee role
-// WHEN I choose to view all departments
-// DONE - THEN I am presented with a formatted table showing department names and department ids
-// WHEN I choose to view all roles
-// Done - THEN I am presented with the job title, role id, the department that role belongs to, and the salary for that role
-// WHEN I choose to view all employees
-// THEN I am presented with a formatted table showing employee data, including employee ids, first names, last names, job titles, departments, salaries, and managers that the employees report to
-// WHEN I choose to add a department
-// THEN I am prompted to enter the name of the department and that department is added to the database
-// WHEN I choose to add a role
-// THEN I am prompted to enter the name, salary, and department for the role and that role is added to the database
-// WHEN I choose to add an employee
-// THEN I am prompted to enter the employee’s first name, last name, role, and manager, and that employee is added to the database
-// WHEN I choose to update an employee role
-// THEN I am prompted to select an employee to update and their new role and this information is updated in the database 
-
-//opening application requirements:
-//view all departments
-//view all roles
-//view all employees
-//add department
-//add role
-//add employee
-//update employee role
-// Update employee managers.
-
-// * View employees by manager.
-
-// * View employees by department.
-
-// * Delete departments, roles, and employees.
-
-// * View the total utilized budget of a department&mdash;in other words, the combined salaries of all employees in that department.
 
 const opening_questions = [
     {
         type: 'list',
         name: 'select_an_action',
         message: 'Select an action to complete.',
-        choices: ['View All Departments', 'View All Roles', 'View All Employees', 'Add a Department', 'Add a new Role', 'Add a New Employee',
-            'Update an Employee Role', 'Exit']
+        choices: ['View All Departments', 'View All Roles', 'View All Employees', "View A Manager's Employees", 'Add a Department', 'Add a new Role', 'Add a New Employee',
+            'Update an Employee', "Delete a Department, Employee, or Role", 'Exit']
     },
 ];
 
@@ -97,6 +60,7 @@ const emp_question = [
     }
 ];
 
+
 function init() {
     let sel_option = '  ';
     console.log(sel_option);
@@ -124,8 +88,11 @@ function init() {
                 case 'Add a New Employee':
                     add_employee();
                     break;
-                case 'Update an Employee Role':
+                case 'Update an Employee':
                     update_employee();
+                    break;
+                case "View A Manager's Employees":
+                    view_managers_employees();
                     break;
                 case 'Exit':
                     process.exit();
@@ -135,7 +102,7 @@ function init() {
 
 const view_dep = () => {
     let table = cTable;
-    console.log("i'm in view_dep");
+    console.log("  ");
     const sql = `SELECT * FROM department`;
     db.query(sql, (err, result) => {
         if (err) {
@@ -150,8 +117,8 @@ const view_dep = () => {
 
 const view_role = () => {
     let table = cTable;
-    console.log("i'm in view_role");
-    const sql = `SELECT role.title, role.id, department.Dep_name AS Department, role.salary FROM role LEFT JOIN department ON role.department_id=department.id`;
+    console.log("  ");
+    const sql = `SELECT role.title AS Title, role.id, department.Dep_name AS Department, role.salary FROM role LEFT JOIN department ON role.department_id=department.id`;
     db.query(sql, (err, result) => {
         if (err) {
             console.log('the view roles query went wrong');
@@ -162,19 +129,44 @@ const view_role = () => {
         init();
     });
 };
-//, employee.CONCAT(firstname, " ", lastname) AS Manager department.Dep_name, 
-// INNER JOIN deparment ON role.department_id=department.id , role.title, role.salary, INNER JOIN role ON employee.role_id=role.id
-
-//CONCAT(first_name, " ", last_name) AS Manager  
 
 const view_employees = () => {
     let table = cTable;
-    console.log("i'm in view_employee");
-    const sql = `SELECT employee.id, employee.first_name AS 'First Name', employee.last_name AS 'Last Name', CONCAT(mgr.first_name, " ", mgr.last_name) AS Manager, role.title AS Title, role.salary AS Salary, department.Dep_name as Department 
+    let grouping = '';
+    const view_question = [
+        {
+            type: 'list',
+            name: 'select_an_action',
+            message: 'How do you want the employee view organized?',
+            choices: ['By Manager', 'By Department', 'Alphabetically', 'Exit']
+        }
+    ];
+    inquirer.prompt(view_question).then((answers) => {
+        if (answers.select_an_action === 'By Manager') {
+            grouping = 'ORDER BY Manager';
+        }
+        else if (answers.select_an_actiond === 'By Department') {
+            grouping = 'ORDER BY Department';
+        }
+        else if (answers.select_an_actiond === 'Alphabetically') {
+            grouping = "ORDER BY 'LAST Name'";
+        }
+        else {
+            init();
+        }
+    });
+    
+    console.log("  ");
+
+    const sql = `SELECT employee.id, employee.first_name AS 'First Name', employee.last_name AS 'Last Name', role.title AS Title, role.salary AS Salary, department.Dep_name as Department, CONCAT(mgr.first_name, " ", mgr.last_name) AS Manager 
     FROM employee 
     INNER JOIN role ON employee.role_id=role.id 
     INNER JOIN department on role.department_id=department.id 
-    LEFT OUTER JOIN employee mgr on employee.manager_id = mgr.id`;
+    LEFT OUTER JOIN employee mgr on employee.manager_id = mgr.id
+    ${grouping}`;
+
+    console.log(sql);
+    
     db.query(sql, (err, result) => {
         if (err) {
             console.log(err);
@@ -187,17 +179,56 @@ const view_employees = () => {
     });
 };
 
+const view_managers_employees = () => {
+    let table = cTable;
+    console.log("  ");
+    let man_obj = [];
+    const sql = `Select CONCAT(first_name, " ", last_name) AS Manager, employee.id from employee WHERE employee.manager_id IS NULL`;
+    db.query(sql, (err, result) => {
+        if (err) {
+            console.log(err);
+            console.log('the view employees query went wrong');
+            return;
+        }
+        result.forEach((element, index) => {
+            let t_obj = { name: element.Manager, value: element.id };
+            man_obj.push(t_obj);
+        });
+        let man_q = [
+            {
+                type: 'list',
+                name: 'select_manager',
+                message: 'Select a Manager to view their employees',
+                choices: man_obj
+            }];
+        inquirer.prompt(man_q).then((answers) => {
+            let man_id = parseInt(answers.select_manager);
+            //make sure its an integer so we wont kick an error.
+            const sql = `SELECT employee.id, employee.first_name AS 'First Name', employee.last_name AS 'Last Name', role.title AS Title, role.salary AS Salary, department.Dep_name as Department 
+            FROM employee 
+            INNER JOIN role ON employee.role_id=role.id 
+            INNER JOIN department on role.department_id=department.id
+            WHERE employee.manager_id = ?`;
+            db.query(sql, man_id, (err, result) => {
+                if (err) {
+                    console.log(err);
+                    console.log('the view by manager went wrong');
+                    return;
+                }
+                table = result;
+                console.table(table);
+                init();
+            });
+        });
+    });
+};
+
 const add_dep = () => {
     let table = cTable;
     console.log('im in add dep');
     console.log(' ');
     inquirer.prompt(dep_question).then((answers) => {
         let dep_name = answers.dep_input;
-        console.log('this is what came over in answers: ');
-        console.log('  ');
-        console.log(dep_name);
-        console.log(' ');
-        console.log("i'm in add department");
         const sql = `INSERT into department (Dep_name) Values (?)`;
         db.query(sql, dep_name, (err, result) => {
             if (err) {
@@ -205,23 +236,14 @@ const add_dep = () => {
                 console.log(err);
                 return;
             }
-            console.log('added a new department?');
-            const sql = `SELECT * FROM department`;
-            db.query(sql, dep_name, (err, result) => {
-                if (err) {
-                    console.log('something went wrong with the view department query after the add_dep query.');
-                    console.log(err);
-                    return;
-                }
-                table = result;
-                console.table(table);
-            });
-            init();
+            console.log('Successfully added a new department: \n');
+            view_dep();
         });
     });
 };
 
 const add_role = async () => {
+    let table = cTable;
     //array for the temp question that will be pushed
     let temp_q = [];
     //role questions array
@@ -242,7 +264,7 @@ const add_role = async () => {
         {
             type: 'list',
             name: 'select_dep',
-            message: 'Select a department to add the role to.',
+            message: 'Select a department to add the role to',
             choices: temp_q
         };
         //add the question to the roles question array
@@ -261,16 +283,14 @@ const add_role = async () => {
                     console.log(err);
                     return;
                 }
-                console.log('added a new role!');
-                init();
+                console.log('Successfully added a new role: \n')
+                view_role();
             });
         });
     });
 };
 
 const add_employee = () => {
-    //array for the temp question that will be pushed
-    let temp_q = [];
     //emp questions array without overwriting the originals
     const emp_qs = [...emp_question];
     console.log(emp_qs);
@@ -332,24 +352,171 @@ const add_employee = () => {
                 let manager_id = parseInt(answers.manager);
                 let emp_values = [first_name, last_name, role_id, manager_id];
                 console.log(emp_values);
-                // const sql = `INSERT into employee (first_name, last_name, role_id, manager_id) Values (?, ?, ?, ?)`;
-                // db.query(sql, emp_values, (err, result) => {
-                //     if (err) {
-                //         console.log('something went wrong with the new role insert');
-                //         console.log(err);
-                //         return;
-                //     }
-                //     console.log('added a new employee!');
-                //     init();
-                // });
+                const sql = `INSERT into employee (first_name, last_name, role_id, manager_id) Values (?, ?, ?, ?)`;
+                db.query(sql, emp_values, (err, result) => {
+                    if (err) {
+                        console.log('something went wrong with the new role insert');
+                        console.log(err);
+                        return;
+                    }
+                    console.log('Successfully added a new employee! \n');
+                    view_employees();
+                    init();
+                });
             });
         });
     });
 };
 
+const update_role_q = (empl_id) => {
+    let emp_q = [];
+    let t_obj = [];
+    console.log('im in update role');
+    const sql = `SELECT role.title, role.id FROM role`;
+    db.query(sql, (err, result) => {
+        if (err) {
+            console.log(err);
+            console.log('the view roles query went wrong');
+            return;
+        }
+        console.log('query was successful');
+        console.log(result);
+        for (let i = 0; i < result.length; i++) {
+            t_obj[i] = { name: result[i].title, value: result[i].id };
+        };
+
+
+        console.log(t_obj);
+        let temp_q =
+        {
+            type: 'list',
+            name: 'role',
+            message: 'Select a new Role for the Employee.',
+            choices: t_obj
+        };
+        emp_q.push(temp_q);
+
+        inquirer.prompt(emp_q).then((answers) => {
+            //make sure its an integer so we wont kick an error.
+            let emp_id = parseInt(empl_id);
+            let new_role = parseInt(answers.role);
+            let emp_values = [new_role, emp_id];
+
+            const sql = `UPDATE employee SET role_id = ? WHERE employee.id = ?`;
+            db.query(sql, emp_values, (err, result) => {
+                if (err) {
+                    console.log('something went wrong with the new role insert');
+                    console.log(err);
+                    return;
+                }
+                console.log('Role Updated successfully. \n');
+                view_employees();
+                init();
+            });
+        });
+    });
+}
+
+const update_manager_q = (empl_id) => {
+    let mgr_q = [];
+    let t_obj = [];
+    const sql = `Select CONCAT(first_name, " ", last_name) AS Manager, employee.id from employee WHERE employee.manager_id IS NULL`;
+    db.query(sql, (err, result) => {
+        if (err) {
+            console.log(err);
+            console.log('the view roles query went wrong');
+            return;
+        }
+        console.log(result);
+        for (let i = 0; i < result.length; i++) {
+            t_obj[i] = { name: result[i].Manager, value: result[i].id };
+        };
+        let temp_q =
+        {
+            type: 'list',
+            name: 'manager',
+            message: 'Select a new Manager for the Employee.',
+            choices: t_obj
+        };
+        mgr_q.push(temp_q);
+
+        console.log(mgr_q);
+
+        inquirer.prompt(mgr_q).then((answers) => {
+            //make sure its an integer so we wont kick an error.
+            let emp_id = parseInt(empl_id);
+            let new_mgr = parseInt(answers.manager);
+            let emp_values = [new_mgr, emp_id];
+
+            const sql = `UPDATE employee SET manager_id = ? WHERE employee.id = ?`;
+            db.query(sql, emp_values, (err, result) => {
+                if (err) {
+                    console.log('something went wrong with the new role insert');
+                    console.log(err);
+                    return;
+                }
+                console.log('Manager Updated successfully. \n');
+                view_employees();
+                init();
+            });
+        });
+    });
+}
 
 const update_employee = () => {
+    let table = cTable;
+    let emp_q = [];
+    let update_emp = [];
+    const sql = `SELECT CONCAT(employee.first_name, '  ', employee.last_name) as Name, employee.id, role.title AS Title
+    FROM employee 
+    INNER JOIN role ON employee.role_id=role.id`;
+    db.query(sql, (err, result) => {
+        if (err) {
+            console.log(err);
+            console.log('the view employees query went wrong');
+            return;
+        }
+        result.forEach((element) => {
+            let t_name = element.Name + ', ' + element.Title;
+            let t_obj = { name: t_name, value: element.id };
+            update_emp.push(t_obj);
+        });
 
+        console.log(update_emp);
+        let temp_q = {
+            type: 'list',
+            name: 'empl_id',
+            message: 'Select an Employee to update',
+            choices: update_emp
+        };
+
+        emp_q.push(temp_q);
+
+        let question = {
+            type: 'list',
+            name: 'wtd',
+            message: 'Select an update to make.',
+            choices: ['Change Role', 'Change Manager', 'Make Them a Manager', 'Exit']
+        };
+
+        emp_q.push(question);
+        console.log(emp_q);
+        inquirer.prompt(emp_q).then((answers) => {
+            let emp_id = answers.empl_id
+            if (answers.wtd === 'Change Role') {
+                update_role_q(emp_id);
+            }
+            else if (answers.wtd === 'Change Manager') {
+                update_manager_q(emp_id);
+            }
+            else if (answers.wtd === 'Make Them a Manager') {
+                make_manager_q(emp_id);
+            }
+            else {
+                init();
+            }
+        });
+    });
 };
 
 init();
