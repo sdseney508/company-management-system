@@ -22,9 +22,10 @@ create table employee (
     id int not null AUTO_INCREMENT primary key,
     first_name varchar(30) not NULL,
     last_name varchar(30) not null,
-    role_id int not NULL,
+    role_id int NOT NULL,
     manager_id int,
     FOREIGN KEY (role_id)
-    REFERENCES role(id)
-    on delete SET NULL
+    REFERENCES role(id),
+    FOREIGN KEY (manager_id)
+    references employee(id)
 );
