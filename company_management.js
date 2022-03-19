@@ -102,16 +102,12 @@ function init() {
     console.log(sel_option);
     inquirer.prompt(opening_questions).then((answers) => {
         sel_option = answers.select_an_action;
-        console.log(sel_option);
         return sel_option;
     })
         .then((sel_option) => {
-            console.log('in the switch case');
-            console.log(sel_option);
             switch (sel_option) {
                 case 'View All Departments':
                     view_dep();
-                    console.log(sel_option);
                     break;
                 case 'View All Roles':
                     view_role();
@@ -133,8 +129,6 @@ function init() {
                     break;
                 case 'Exit':
                     process.exit();
-                    return;
-
             }
         });
 };
@@ -304,8 +298,7 @@ const add_employee = () => {
         };
         //add the question to the emp question array
         emp_qs.push(temp_question);
-    //     `SELECT employee.id, employee.first_name AS First Name, employee.last_name AS Last Name, role.title AS Title, role.salary AS Salary, 
-    // department.Dep_name as Department FROM employee INNER JOIN role ON employee.role_id=role.id inner join department on role.department_id=department.id`;
+
         const sql = `SELECT CONCAT(first_name, ' ', last_name) AS Manager, employee.manager_id, department.Dep_name AS Department FROM employee 
         INNER JOIN role ON employee.role_id=role.id INNER JOIN department on role.department_id=department.id WHERE manager_id IS NOT NULL`;
         db.query(sql, (err, result) => {
