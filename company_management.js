@@ -22,7 +22,7 @@ const opening_questions = [
         name: 'select_an_action',
         message: 'Select an action to complete.',
         choices: ['View All Departments', 'View All Roles', 'View All Employees', "View A Manager's Employees", 'Add a Department', 'Add a new Role', 'Add a New Employee',
-            'Update an Employee', "Delete a Department, Employee, or Role", 'Exit']
+            'Update an Employee', 'Exit']
     },
 ];
 
@@ -136,46 +136,40 @@ const view_employees = () => {
     const view_question = [
         {
             type: 'list',
-            name: 'select_an_action',
+            name: 'what_to_do',
             message: 'How do you want the employee view organized?',
-            choices: ['By Manager', 'By Department', 'Alphabetically', 'Exit']
+            choices: ['By Manager', 'By Department', 'Exit']
         }
     ];
     inquirer.prompt(view_question).then((answers) => {
-        if (answers.select_an_action === 'By Manager') {
+        if (answers.what_to_do === 'By Manager') {
             grouping = 'ORDER BY Manager';
         }
-        else if (answers.select_an_actiond === 'By Department') {
+        else if (answers.wtd === 'By Department') {
             grouping = 'ORDER BY Department';
-        }
-        else if (answers.select_an_actiond === 'Alphabetically') {
-            grouping = "ORDER BY 'LAST Name'";
         }
         else {
             init();
         }
-    });
-    
-    console.log("  ");
+        console.log("  ");
 
-    const sql = `SELECT employee.id, employee.first_name AS 'First Name', employee.last_name AS 'Last Name', role.title AS Title, role.salary AS Salary, department.Dep_name as Department, CONCAT(mgr.first_name, " ", mgr.last_name) AS Manager 
-    FROM employee 
-    INNER JOIN role ON employee.role_id=role.id 
-    INNER JOIN department on role.department_id=department.id 
-    LEFT OUTER JOIN employee mgr on employee.manager_id = mgr.id
-    ${grouping}`;
-
-    console.log(sql);
-    
-    db.query(sql, (err, result) => {
-        if (err) {
-            console.log(err);
-            console.log('the view employees query went wrong');
-            return;
-        }
-        table = result;
-        console.table(table);
-        init();
+        const sql = `SELECT employee.id, employee.first_name AS 'First Name', employee.last_name AS 'Last Name', role.title AS Title, role.salary AS Salary, department.Dep_name as Department, CONCAT(mgr.first_name, " ", mgr.last_name) AS Manager 
+        FROM employee 
+        INNER JOIN role ON employee.role_id=role.id 
+        INNER JOIN department on role.department_id=department.id 
+        LEFT OUTER JOIN employee mgr on employee.manager_id = mgr.id
+        ${grouping}`;
+        console.log(sql);
+        db.query(sql, (err, result) => {
+            if (err) {
+                console.log(err);
+                console.log('the view employees query went wrong');
+                return;
+            }
+            table = result;
+            console.table(table);
+            init();
+        });
     });
 };
 
@@ -481,8 +475,6 @@ const update_employee = () => {
             let t_obj = { name: t_name, value: element.id };
             update_emp.push(t_obj);
         });
-
-        console.log(update_emp);
         let temp_q = {
             type: 'list',
             name: 'empl_id',
@@ -500,7 +492,6 @@ const update_employee = () => {
         };
 
         emp_q.push(question);
-        console.log(emp_q);
         inquirer.prompt(emp_q).then((answers) => {
             let emp_id = answers.empl_id
             if (answers.wtd === 'Change Role') {
@@ -508,9 +499,6 @@ const update_employee = () => {
             }
             else if (answers.wtd === 'Change Manager') {
                 update_manager_q(emp_id);
-            }
-            else if (answers.wtd === 'Make Them a Manager') {
-                make_manager_q(emp_id);
             }
             else {
                 init();
