@@ -46,7 +46,7 @@
  ## License
 
  ![badge](https://img.shields.io/badge/license-MIT-blue)
- License file can be found at: https://github.com/sdseney508/Team-Profile-Generator/blob/main/LICENSE.txt
+ License file can be found at: https://github.com/sdseney508/company-management-system/blob/main/LICENSE.txt
  ## Badges
 
  ## Features
@@ -60,7 +60,10 @@
  -Add a New Department to the company
  -Add a new Role for its employees
  -Add a New Employee after filling in the required information
- -Update an Employee's information
+ -Update an Employee's information (Role, Manager, or make them a manager)
+
+ A walkthrough video can be found at:
+ https://watch.screencastify.com/v/zCWeaT80wnAjciGZOw0F
  
  ## Contributing 
  N/A
